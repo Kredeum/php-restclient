@@ -4,6 +4,10 @@
  * PHP REST Client
  * https://github.com/tcdent/php-restclient
  * (c) 2013-2017 Travis Dent <tcdent@gmail.com>
+ * 
+ * https://github.com/kredeum/php-restclient
+ * 2021 Kredeum <contact@kredeum.com>
+ * 
  */
 
 class RestClientException extends Exception
@@ -304,4 +308,58 @@ class RestClient implements Iterator, ArrayAccess
 
     return $this->decoded_response;
   }
+
+  /**
+   * MULTIPART ADDITION (KREDEUM)
+   * 
+   * Add multipart capabilities to php-restclient 
+   * 
+   * function multipart($parts, $boundary)
+   * $parts = array of $part
+   * $part['type'] = 'text' || "file" || "json" || "html"
+   * $part['name']
+   * $part['content']  
+   * $part['headers']  
+   * 
+   * $boundary = whatever string to separate parts
+   * 
+   * returns parts encoded
+   */
+  public function multipart($parts, $boundary)
+  {
+    $ret = "";
+    foreach ($parts as $part) {
+
+      $type = array_key_exists('type', $part) ? $part['type'] : 'text';
+      $name = array_key_exists('name', $part) ? $part['name'] : 'name';
+      $content = array_key_exists('content', $part) ? $part['content'] : '';
+      $headers = array_key_exists('headers', $part) ? $part['headers'] : array();
+      $disp = "Content-Disposition: form-data; name=$name;\r\n";
+
+      $ret .= "--$boundary\r\n";
+
+      if ($type == "text") {
+        $ret .= "Content-Type: text/plain\r\n";
+      } elseif ($type == "file") {
+        $ret .= "Content-Type: application/octet-stream\r\n";
+        $disp = "Content-Disposition: form-data; name=file; filename=$name\r\n";
+      } elseif ($type == "json") {
+        $ret .= "Content-Type: application/json\r\n";
+      } elseif ($type == "text") {
+        $ret .= "Content-Type: text/plain\r\n";
+      } elseif ($type == "html") {
+        $ret .= "Content-Type: text/html\r\n";
+      }
+      foreach ($headers as $key => $value) {
+        $ret .= "$key: $value\r\n";
+      }
+      $ret .= "$disp\r\n$content\r\n";
+    }
+    $ret .= "--$boundary--\r\n";
+
+    return  $ret;
+  }
+  /**
+   * END MULTIPART ADDITION 
+   */
 }
